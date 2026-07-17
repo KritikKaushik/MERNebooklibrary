@@ -11,6 +11,7 @@ function Register() {
     username: "",
     email: "",
     password: "",
+    recoveryPasskey: "",
     role: "reader",
   });
 
@@ -20,44 +21,38 @@ function Register() {
       [e.target.name]: e.target.value,
     });
   };
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    const payload = {
-      name: formData.username,
-      email: formData.email,
-      password: formData.password,
-    };
+    try {
+      const payload = {
+        name: formData.username,
+        email: formData.email,
+        password: formData.password,
+        recoveryPasskey: formData.recoveryPasskey,
+      };
 
-    console.log("Submitting:", payload);
+      let data;
 
-    let data;
+      if (formData.role === "author") {
+        data = await registerAuthor(payload);
+      } else {
+        data = await register(payload);
+      }
 
-    if (formData.role === "author") {
-      data = await registerAuthor(payload);
-    } else {
-      data = await register(payload);
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data)
+      );
+
+      alert("Registration successful");
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+        "Registration failed"
+      );
     }
-
-    console.log("Response:", data);
-
-    localStorage.setItem(
-      "user",
-      JSON.stringify(data)
-    );
-
-    alert("Registration successful");
-  } catch (error) {
-  console.log("FULL ERROR:", error);
-  console.log("RESPONSE:", error.response?.data);
-
-  alert(
-    JSON.stringify(error.response?.data) ||
-    error.message
-  );
-}
-};
+  };
 
   return (
     <>
@@ -90,6 +85,15 @@ const handleSubmit = async (e) => {
             name="password"
             placeholder="Password"
             value={formData.password}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            type="password"
+            name="recoveryPasskey"
+            placeholder="Recovery Passkey"
+            value={formData.recoveryPasskey}
             onChange={handleChange}
             required
           />
