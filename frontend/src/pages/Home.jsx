@@ -11,32 +11,35 @@ function Home() {
   const [books, setBooks] = useState([]);
   const [featuredBooks, setFeaturedBooks] = useState([]);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 0,
+  });
 
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        const allBooks = await getBooks();
+        const allBooks = await getBooks({
+          search,
+          page: currentPage,
+          limit: 6,
+        });
         const featured = await getFeaturedBooks();
 
-        setBooks(allBooks);
+        setBooks(allBooks.books);
         setFeaturedBooks(featured);
+        setPagination({
+          page: allBooks.page,
+          totalPages: allBooks.totalPages,
+        });
       } catch (error) {
         console.error(error);
       }
     };
 
     loadBooks();
-  }, []);
-
-  const filteredBooks = books.filter(
-    (book) =>
-      book.title
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      book.genre
-        .toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  }, [currentPage, search]);
 
   return (
     <>
@@ -89,16 +92,17 @@ function Home() {
           type="text"
           placeholder="Search by title or genre"
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
         />
 
         <h2>All Books</h2>
 
         <div className="book-list-horizontal">
-          {filteredBooks.length > 0 ? (
-            filteredBooks.map((book) => (
+          {books.length > 0 ? (
+            books.map((book) => (
               <div
                 key={book._id}
                 className="book-item"
@@ -132,7 +136,36 @@ function Home() {
             <p>No books found.</p>
           )}
         </div>
+
+        {pagination.totalPages > 1 && (
+          <div>
+            <button
+              onClick={() =>
+                setCurrentPage(currentPage - 1)
+              }
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+
+            <button
+              onClick={() =>
+                setCurrentPage(currentPage + 1)
+              }
+              disabled={
+                currentPage === pagination.totalPages
+              }
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
+
       <Footer />
     </>
   );
