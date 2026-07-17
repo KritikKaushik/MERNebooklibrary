@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { login } from "../services/authService";
@@ -71,6 +71,12 @@ function Login() {
           <button type="submit">
             Login
           </button>
+
+          <p>
+            <Link to="/recovery">
+              Forgot password?
+            </Link>
+          </p>
         </form>
       </div>
 
