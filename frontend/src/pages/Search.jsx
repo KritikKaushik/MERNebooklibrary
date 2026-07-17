@@ -5,19 +5,32 @@ import Footer from "../components/Footer";
 import { getBooks } from "../services/bookService";
 
 function Search() {
-  const [search, setSearch] = useState("");
-
-  const [allBooks, setAllBooks] = useState([]);
+  const [filters, setFilters] = useState({
+    search: "",
+    genre: "",
+    featured: false,
+  });
 
   const [books, setBooks] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 0,
+  });
 
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        const data = await getBooks();
+        const data = await getBooks({
+          page: 1,
+          limit: 6,
+        });
 
-        setAllBooks(data);
-        setBooks(data);
+        setBooks(data.books);
+        setPagination({
+          page: data.page,
+          totalPages: data.totalPages,
+        });
       } catch (error) {
         console.error(error);
       }
@@ -26,20 +39,84 @@ function Search() {
     loadBooks();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    setFilters({
+      ...filters,
+      [e.target.name]:
+        e.target.type === "checkbox"
+          ? e.target.checked
+          : e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const filteredBooks = allBooks.filter(
-      (book) =>
-        book.title
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        book.genre
-          .toLowerCase()
-          .includes(search.toLowerCase())
-    );
+    try {
+      const data = await getBooks({
+        search: filters.search,
+        genre: filters.genre,
+        featured: filters.featured,
+        page: 1,
+        limit: 6,
+      });
 
-    setBooks(filteredBooks);
+      setBooks(data.books);
+      setCurrentPage(1);
+      setPagination({
+        page: data.page,
+        totalPages: data.totalPages,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleReset = async () => {
+    const emptyFilters = {
+      search: "",
+      genre: "",
+      featured: false,
+    };
+
+    setFilters(emptyFilters);
+
+    try {
+      const data = await getBooks({
+        page: 1,
+        limit: 6,
+      });
+
+      setBooks(data.books);
+      setCurrentPage(1);
+      setPagination({
+        page: data.page,
+        totalPages: data.totalPages,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handlePageChange = async (page) => {
+    try {
+      const data = await getBooks({
+        search: filters.search,
+        genre: filters.genre,
+        featured: filters.featured,
+        page,
+        limit: 6,
+      });
+
+      setBooks(data.books);
+      setCurrentPage(data.page);
+      setPagination({
+        page: data.page,
+        totalPages: data.totalPages,
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -53,15 +130,38 @@ function Search() {
           <input
             type="text"
             name="search"
-            value={search}
+            value={filters.search}
             placeholder="Search by title or genre"
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
+            onChange={handleChange}
           />
+
+          <input
+            type="text"
+            name="genre"
+            value={filters.genre}
+            placeholder="Filter by genre"
+            onChange={handleChange}
+          />
+
+          <label>
+            <input
+              type="checkbox"
+              name="featured"
+              checked={filters.featured}
+              onChange={handleChange}
+            />
+            Featured books only
+          </label>
 
           <button type="submit">
             Search
+          </button>
+
+          <button
+            type="button"
+            onClick={handleReset}
+          >
+            Reset
           </button>
         </form>
 
@@ -105,6 +205,34 @@ function Search() {
           <p>
             No books found.
           </p>
+        )}
+
+        {pagination.totalPages > 1 && (
+          <div>
+            <button
+              onClick={() =>
+                handlePageChange(currentPage - 1)
+              }
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+
+            <button
+              onClick={() =>
+                handlePageChange(currentPage + 1)
+              }
+              disabled={
+                currentPage === pagination.totalPages
+              }
+            >
+              Next
+            </button>
+          </div>
         )}
       </div>
 
