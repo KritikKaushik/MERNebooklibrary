@@ -3,12 +3,14 @@ import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BorrowButton from "../components/BorrowButton";
+import WishlistButton from "../components/WishlistButton";
 
 import { getBookById } from "../services/bookService";
 import {
   getReviews,
   addReview,
 } from "../services/reviewService";
+import { getWishlist } from "../services/wishlistService";
 
 function BookDetails() {
   const { id } = useParams();
@@ -16,6 +18,9 @@ function BookDetails() {
   const [book, setBook] = useState(null);
 
   const [reviews, setReviews] = useState([]);
+
+  const [isWishlisted, setIsWishlisted] =
+    useState(false);
 
   const [reviewData, setReviewData] = useState({
     review: "",
@@ -32,9 +37,23 @@ function BookDetails() {
         const bookData = await getBookById(id);
         const reviewData =
           await getReviews(id);
+        const isLoggedIn = !!JSON.parse(
+          localStorage.getItem("user")
+        );
 
         setBook(bookData);
         setReviews(reviewData);
+
+        if (isLoggedIn) {
+          const wishlist = await getWishlist();
+
+          setIsWishlisted(
+            wishlist.some(
+              (wishlistBook) =>
+                wishlistBook._id === id
+            )
+          );
+        }
       } catch (error) {
         console.error(error);
       }
@@ -110,6 +129,12 @@ function BookDetails() {
           <>
             <BorrowButton
               bookId={book._id}
+            />
+
+            <WishlistButton
+              bookId={book._id}
+              isWishlisted={isWishlisted}
+              onWishlistChange={setIsWishlisted}
             />
 
             <h3>Reviews</h3>
