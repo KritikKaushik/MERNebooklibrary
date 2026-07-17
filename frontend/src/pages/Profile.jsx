@@ -4,52 +4,47 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ReturnButton from "../components/ReturnButton";
 
-import { getProfile } from "../services/authService";
 import {
-  getMyBooks,
-  createBook,
-} from "../services/bookService";
+  getProfile,
+  updateProfile,
+  setRecoveryPasskey as updateRecoveryPasskey,
+} from "../services/authService";
+
 import { getBorrowedBooks } from "../services/borrowService";
+import { getWishlist } from "../services/wishlistService";
+import WishlistButton from "../components/WishlistButton";
 
 function Profile() {
   const [user, setUser] = useState(null);
 
-  const [borrowedBooks, setBorrowedBooks] =
-    useState([]);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+  });
 
-  const [uploadedBooks, setUploadedBooks] =
-    useState([]);
+  const [borrowedBooks, setBorrowedBooks] = useState([]);
 
-  const [uploadForm, setUploadForm] =
-    useState({
-      title: "",
-      genre: "",
-      cover: null,
-      content: "",
-    });
+  const [wishlistBooks, setWishlistBooks] = useState([]);
+
+  const [recoveryPasskey, setRecoveryPasskey] = useState("");
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const profile =
-          await getProfile();
+        const profile = await getProfile();
 
         setUser(profile);
 
-        const borrowed =
-          await getBorrowedBooks();
+        setProfileForm({
+          name: profile.name,
+          email: profile.email,
+        });
 
+        const borrowed = await getBorrowedBooks();
         setBorrowedBooks(borrowed);
 
-        if (
-          profile.role === "author" ||
-          profile.role === "admin"
-        ) {
-          const books =
-            await getMyBooks();
-
-          setUploadedBooks(books);
-        }
+        const wishlist = await getWishlist();
+        setWishlistBooks(wishlist);
       } catch (error) {
         console.error(error);
       }
@@ -58,43 +53,66 @@ function Profile() {
     loadProfile();
   }, []);
 
-  const handleChange = (e) => {
-    setUploadForm({
-      ...uploadForm,
-      [e.target.name]:
-        e.target.type === "file"
-          ? e.target.files[0]
-          : e.target.value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleRecoveryPasskey = async (e) => {
     e.preventDefault();
 
     try {
-      const newBook =
-        await createBook(uploadForm);
+      const data = await updateRecoveryPasskey(recoveryPasskey);
 
-      setUploadedBooks([
-        newBook,
-        ...uploadedBooks,
-      ]);
+      setRecoveryPasskey("");
 
-      setUploadForm({
-        title: "",
-        genre: "",
-        cover: null,
-        content: "",
-      });
-
-      alert(
-        "Book uploaded successfully"
-      );
+      alert(data.message);
     } catch (error) {
       alert(
-        error.response?.data
-          ?.message ||
-          "Upload failed"
+        error.response?.data?.message ||
+          "Recovery passkey update failed"
+      );
+    }
+  };
+
+  const handleProfileChange = (e) => {
+    setProfileForm({
+      ...profileForm,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const updatedUser = await updateProfile(profileForm);
+
+      setUser(updatedUser);
+
+      const storedUser = JSON.parse(
+        localStorage.getItem("user")
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...storedUser,
+          name: updatedUser.name,
+          email: updatedUser.email,
+        })
+      );
+
+      alert("Profile updated successfully");
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+          "Profile update failed"
+      );
+    }
+  };
+
+  const handleWishlistChange = (bookId, isWishlisted) => {
+    if (!isWishlisted) {
+      setWishlistBooks(
+        wishlistBooks.filter(
+          (book) => book._id !== bookId
+        )
       );
     }
   };
@@ -104,8 +122,7 @@ function Profile() {
   }
 
   const isAuthor =
-    user.role === "author" ||
-    user.role === "admin";
+    user.role === "author" 
 
   return (
     <>
@@ -114,158 +131,142 @@ function Profile() {
       <div className="container">
         <h2>Welcome, {user.name}</h2>
 
-        <p>Email: {user.email}</p>
+        <p>
+          <strong>Email:</strong> {user.email}
+        </p>
 
-        <p>Role: {user.role}</p>
+        <p>
+          <strong>Role:</strong> {user.role}
+        </p>
+
+        <hr />
+
+        <h3>Edit Profile</h3>
+
+        <form onSubmit={handleProfileSubmit}>
+          <input
+            type="text"
+            name="name"
+            placeholder="Name"
+            value={profileForm.name}
+            onChange={handleProfileChange}
+            required
+          />
+
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={profileForm.email}
+            onChange={handleProfileChange}
+            required
+          />
+
+          <button type="submit">
+            Save Profile
+          </button>
+        </form>
+
+        <hr />
+
+        <h3>Recovery Passkey</h3>
+
+        <form onSubmit={handleRecoveryPasskey}>
+          <input
+            type="password"
+            placeholder="Set a recovery passkey"
+            value={recoveryPasskey}
+            onChange={(e) =>
+              setRecoveryPasskey(e.target.value)
+            }
+            required
+          />
+
+          <button type="submit">
+            Save Recovery Passkey
+          </button>
+        </form>
+
+        <hr />
 
         <h3>Your Borrowed Books</h3>
 
         {borrowedBooks.length > 0 ? (
           <ul>
-            {borrowedBooks.map(
-              (borrow) => (
-                <li
-                  key={borrow._id}
-                >
-                  <h4>
-                    {
-                      borrow.book
-                        ?.title
-                    }
-                  </h4>
+            {borrowedBooks.map((borrow) => (
+              <li key={borrow._id}>
+                <h4>{borrow.book?.title}</h4>
 
-                  <p>
-                    {
-                      borrow.book
-                        ?.genre
-                    }
-                  </p>
+                <p>{borrow.book?.genre}</p>
 
-                  <Link
-                    to={`/book/${borrow.book?._id}`}
-                  >
-                    View Book
-                  </Link>
+                <Link to={`/book/${borrow.book?._id}`}>
+                  View Book
+                </Link>
 
-                  <ReturnButton
-                    bookId={
-                      borrow.book
-                        ?._id
-                    }
-                  />
-                </li>
-              )
-            )}
+                <ReturnButton
+                  bookId={borrow.book?._id}
+                />
+              </li>
+            ))}
           </ul>
         ) : (
-          <p>
-            No borrowed books.
-          </p>
+          <p>No borrowed books.</p>
+        )}
+
+        <hr />
+
+        <h3>Your Wishlist</h3>
+
+        {wishlistBooks.length > 0 ? (
+          <ul>
+            {wishlistBooks.map((book) => (
+              <li key={book._id}>
+                <h4>{book.title}</h4>
+
+                <p>{book.genre}</p>
+
+                <p>
+                  Author: {book.author?.name}
+                </p>
+
+                <Link to={`/book/${book._id}`}>
+                  View Book
+                </Link>
+
+                <WishlistButton
+                  bookId={book._id}
+                  isWishlisted={true}
+                  onWishlistChange={(isWishlisted) =>
+                    handleWishlistChange(
+                      book._id,
+                      isWishlisted
+                    )
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Your wishlist is empty.</p>
         )}
 
         {isAuthor && (
           <>
-            <h3>
-              Upload a New Book
-            </h3>
+            <hr />
 
-            <form
-              onSubmit={
-                handleSubmit
-              }
-            >
-              <input
-                type="text"
-                name="title"
-                placeholder="Book Title"
-                value={
-                  uploadForm.title
-                }
-                onChange={
-                  handleChange
-                }
-                required
-              />
+            <h3>Author Dashboard</h3>
 
-              <input
-                type="text"
-                name="genre"
-                placeholder="Genre"
-                value={
-                  uploadForm.genre
-                }
-                onChange={
-                  handleChange
-                }
-                required
-              />
+            <p>
+              Manage your books, upload new books,
+              edit existing ones, and delete books
+              from your dashboard.
+            </p>
 
-              <input
-                type="file"
-                name="cover"
-                onChange={
-                  handleChange
-                }
-              />
-
-              <textarea
-                name="content"
-                placeholder="Book Content"
-                value={
-                  uploadForm.content
-                }
-                onChange={
-                  handleChange
-                }
-                required
-              />
-
-              <button type="submit">
-                Upload Book
+            <Link to="/author-dashboard">
+              <button>
+                Go to Author Dashboard
               </button>
-            </form>
-
-            <h3>
-              Your Uploaded Books
-            </h3>
-
-            {uploadedBooks.length >
-            0 ? (
-              <ul>
-                {uploadedBooks.map(
-                  (book) => (
-                    <li
-                      key={
-                        book._id
-                      }
-                    >
-                      <h4>
-                        {
-                          book.title
-                        }
-                      </h4>
-
-                      <p>
-                        {
-                          book.genre
-                        }
-                      </p>
-
-                      <Link
-                        to={`/book/${book._id}`}
-                      >
-                        View
-                      </Link>
-                    </li>
-                  )
-                )}
-              </ul>
-            ) : (
-              <p>
-                No uploaded
-                books.
-              </p>
-            )}
+            </Link>
           </>
         )}
       </div>
