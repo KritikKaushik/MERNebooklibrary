@@ -20,6 +20,18 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    recoveryPasskey: {
+      type: String,
+      select: false,
+    },
+
+    wishlist: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Book",
+      },
+    ],
+
     role: {
       type: String,
       enum: ["admin", "author", "reader"],
