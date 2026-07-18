@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const Book = require("../models/Book");
 const Review = require("../models/Review");
+const Borrow = require("../models/Borrow");
 
 
 // ==================== USERS ====================
@@ -120,9 +121,119 @@ const deleteReviewAdmin = async (req, res) => {
   }
 };
 
+// ==================== DASHBOARD ====================
+
+const getDashboardStats = async (req, res) => {
+  try {
+    const [
+      users,
+      authors,
+      admins,
+      books,
+      activeBorrows,
+      reviews,
+    ] = await Promise.all([
+      User.countDocuments({ role: "reader" }),
+      User.countDocuments({ role: "author" }),
+      User.countDocuments({ role: "admin" }),
+      Book.countDocuments(),
+      Borrow.countDocuments({ status: "borrowed" }),
+      Review.countDocuments(),
+    ]);
+
+    res.json({
+      users,
+      authors,
+      admins,
+      books,
+      activeBorrows,
+      reviews,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+
+//user management
+
+
+const updateUser = async (req, res) => {
+  try {
+    const { name, email, role } = req.body;
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.role = role || user.role;
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+
+
+const updateBookAdmin = async (req, res) => {
+  try {
+    const { title, genre, content, featured } = req.body;
+
+    const book = await Book.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    book.title = title ?? book.title;
+    book.genre = genre ?? book.genre;
+    book.content = content ?? book.content;
+
+    if (featured !== undefined) {
+      book.featured = featured;
+    }
+
+    if (req.file) {
+      book.cover = `/uploads/covers/${req.file.filename}`;
+    }
+
+    const updatedBook = await book.save();
+
+    res.json(updatedBook);
+  } catch (error) {
+  console.error("updateBookAdmin Error:", error);
+
+  res.status(500).json({
+    message: error.message,
+  });
+  }
+};
+
 
 module.exports = {
+  getDashboardStats,
+
   getAllUsers,
+  updateUser,
+  updateBookAdmin,
   deleteUser,
 
   getAllBooks,
