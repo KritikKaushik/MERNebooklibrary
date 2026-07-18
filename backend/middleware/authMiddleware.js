@@ -20,6 +20,13 @@ const protect = async (req, res, next) => {
         "-password"
       );
 
+      // A token must not authorize access after its account is deleted.
+      if (!req.user) {
+        return res.status(401).json({
+          message: "User no longer exists",
+        });
+      }
+
       next();
     } catch (error) {
       return res.status(401).json({
