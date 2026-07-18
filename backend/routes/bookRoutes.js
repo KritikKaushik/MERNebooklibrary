@@ -7,7 +7,8 @@ const {
   getFeaturedBooks,
   getBookById,
   deleteBook,
-  getMyBooks
+  getMyBooks,
+  updateBook,
 } = require("../controllers/bookController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -35,10 +36,18 @@ router.get(
 
 router.get("/:id", getBookById);
 
+router.put(
+  "/:id",
+  protect,
+  authorize("author", "admin"),
+  upload.single("cover"),
+  updateBook
+);
+
 router.delete(
   "/:id",
   protect,
-  authorize("admin"),
+  authorize("author", "admin"),
   deleteBook
 );
 
