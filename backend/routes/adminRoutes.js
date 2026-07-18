@@ -1,18 +1,19 @@
 const express = require("express");
-
 const {
+  getDashboardStats,
   getAllUsers,
+  updateUser,
   deleteUser,
-
   getAllBooks,
+  updateBookAdmin,
   deleteBookAdmin,
-
   getAllReviews,
   deleteReviewAdmin,
 } = require("../controllers/adminController");
 
 const { protect } = require("../middleware/authMiddleware");
 const authorize = require("../middleware/roleMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
 const router = express.Router();
 
@@ -65,6 +66,38 @@ router.delete(
   protect,
   authorize("admin"),
   deleteReviewAdmin
+);
+
+//Dashboard Stats
+
+router.get(
+  "/dashboard",
+  protect,
+  authorize("admin"),
+  getDashboardStats
+);
+
+//User Management
+router.put(
+  "/users/:id",
+  protect,
+  authorize("admin"),
+  updateUser
+);
+//update book by admin
+router.put(
+  "/books/:id",
+  protect,
+  authorize("admin"),
+  updateBookAdmin
+);
+
+router.put(
+  "/books/:id",
+  protect,
+  authorize("admin"),
+  upload.single("cover"),
+  updateBookAdmin
 );
 
 module.exports = router;
