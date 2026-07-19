@@ -23,7 +23,6 @@ const borrowSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
     status: {
       type: String,
       enum: ["borrowed", "returned"],
