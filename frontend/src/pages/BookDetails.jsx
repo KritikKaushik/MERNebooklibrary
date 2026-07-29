@@ -4,7 +4,6 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BorrowButton from "../components/BorrowButton";
 import WishlistButton from "../components/WishlistButton";
-
 import { getBookById } from "../services/bookService";
 import {
   getReviews,
