@@ -5,7 +5,6 @@ const authorize = (...roles) => {
         message: "Access denied",
       });
     }
-
     next();
   };
 };
