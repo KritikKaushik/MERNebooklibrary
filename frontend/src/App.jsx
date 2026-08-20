@@ -50,10 +50,7 @@ function App() {
           element={<AdminPanel />}
         />
 
-        <Route
-          path="/book/:id"
-          element={<BookDetails />}
-        />
+        
       </Routes>
     </BrowserRouter>
   );
